@@ -34,6 +34,26 @@ ARCHIVE_GRAPHICS_PATH = os.path.abspath('../graphics-archive')
 TEMPLATES_PATH = os.path.abspath('graphic_templates')
 
 """
+PYM
+"""
+
+PYM = {
+    'pym_path': 'pym',
+    'pym_file': 'pym-v1.0.0.min.js',
+    'pym_loader_path': 'pym-loaders',
+    'pym_loader_file': 'pym-loader-v0.3.0.min.js',
+}
+
+"""
+CAREBOT
+"""
+
+CAREBOT = {
+    'carebot-path': 'carebot',
+    'carebot-file': 'carebot-tracker-v0.8.0.min.js',
+}
+
+"""
 OAUTH
 """
 

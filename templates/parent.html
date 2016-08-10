@@ -186,101 +186,44 @@
 
 <!-- textarea contents -->
     <textarea readonly="readonly" rows="10" cols="50">
-<div id="responsive-embed-{{ slug }}"></div>
-<script type="text/javascript">
-    // Require.js is on the page (new Seamus)
-    if (typeof requirejs !== 'undefined') {
-        // Create a local require.js namespace
-        var require_{{ var_name }} = requirejs.config({
-            context: '{{ slug }}',
-            paths: {
-                'pym': 'http://apps.npr.org/dailygraphics/graphics/{{ slug }}/js/lib/pym',
-                'CarebotTracker': '//apps.npr.org/dailygraphics/graphics/{{ slug }}/js/lib/carebot-tracker'
-            },
-            shim: {
-                'pym': { exports: 'pym' }
-            }
-        });
+<div data-pym-src="http://apps.npr.org/dailygraphics/graphics/{{ slug }}/child.html"></div>
+<script type=text/javascript>
+    (function(jQuery) {
+        if (typeof jQuery === 'undefined' || typeof jQuery.getScript !== 'function') {
+            console.error('could not load graphic: jQuery is not on the page.');
+            return;
+        }
 
-        // Load pym into locale namespace
-        require_{{ var_name }}(['require', 'pym', 'CarebotTracker'], function (require, Pym, CarebotTracker) {
-            // Create pym parent
-            var pymParent = new Pym.Parent(
-                'responsive-embed-{{ slug }}',
-                'http://apps.npr.org/dailygraphics/graphics/{{ slug }}/child.html',
-                {}
-            );
-
-            // Unbind events when the page changes
-            document.addEventListener('npr:pageUnload', function (e) {
-                // Unbind *this* event once its run once
-                e.target.removeEventListener(e.type, arguments.callee);
-
-                // Pym versions with "remove"
-                if (typeof pymParent.remove == 'function') {
-                    pymParent.remove();
-                // Pym version without "remove"
-                } else {
-                    // Unbind pym events
-                    window.removeEventListener('message', pymParent._processMessage);
-                    window.removeEventListener('resize', pymParent._onResize);
-                }
-
-                // Explicitly unload pym library
-                require_{{ var_name }}.undef('pym');
-                require_{{ var_name }} = null;
-            })
-
-            // Add Carebot linger time tracker
-            var lingerTracker = new CarebotTracker.VisibilityTracker('responsive-embed-{{ slug }}', function(result) {
-              pymParent.sendMessage('on-screen', result.bucket);
-            });
-
-            // Add Carebot scroll depth tracker
-            // var scrollTracker = new CarebotTracker.ScrollTracker('storytext', function(percent, seconds) {
-            //   pymParent.sendMessage('scroll-depth', JSON.stringify({
-            //     percent: percent,
-            //     seconds: seconds
-            //   }));
-            // });
-        });
-    // Require.js is not on the page, but jQuery is (old Seamus)
-    } else if (typeof $ !== 'undefined' && typeof $.getScript === 'function') {
-        // Load pym
-        $.getScript('http://apps.npr.org/dailygraphics/graphics/{{ slug }}/js/lib/pym.js').done(function () {
-            // Wait for page load
-            $(function () {
-                // Create pym parent
-                var pymParent = new pym.Parent(
-                    'responsive-embed-{{ slug }}',
-                    'http://apps.npr.org/dailygraphics/graphics/{{ slug }}/child.html',
-                    {}
-                );
-
-                // Load carebot and add tracker
-                // Separate from pym so that any failures do not affect loading
-                // the actual graphic.
-                $.getScript('http://apps.npr.org/dailygraphics/graphics/{{ slug }}/js/lib/carebot-tracker.js').done(function () {
-                    // Add Carebot tracker
-                    var tracker = new CarebotTracker.VisibilityTracker('responsive-embed-{{ slug }}', function(result) {
-                      pymParent.sendMessage('on-screen', result.bucket);
+        var addCarebotTracking = function(instances) {
+            for (var idx = 0; idx < instances.length; ++idx) {
+                if (instances[idx].el.getAttribute("data-carebot")) {continue;}
+                // Create a valid scope for CarebotTracker callbacks
+                (function(idx) {
+                    var instance = instances[idx];
+                    instance.el.setAttribute("data-carebot", "tracked");
+                    if (idx === 0) { // Only on one graphic per page
+                        new CarebotTracker.ScrollTracker('storytext', function(percent, seconds) {
+                            if (instance.el.getElementsByTagName('iframe').length === 0) {return;}
+                            instance.sendMessage('scroll-depth', JSON.stringify({percent: percent,seconds: seconds}));
+                        });
+                    }
+                    new CarebotTracker.VisibilityTracker(instance.id, function(result) {
+                        if (instance.el.getElementsByTagName('iframe').length === 0) {return;}
+                        instance.sendMessage('on-screen', result.bucket);
                     });
+                })(idx);
+            };
+        };
 
-                    // Add Carebot scroll depth tracker
-                    // Uncomment on one graphic per story
-                    // var scrollTracker = new CarebotTracker.ScrollTracker('storytext', function(percent, seconds) {
-                    //   pymParent.sendMessage('scroll-depth', JSON.stringify({
-                    //     percent: percent,
-                    //     seconds: seconds
-                    //   }));
-                    // });
+        jQuery.getScript("//apps.npr.org/pym/pym-v1.0.0.js")
+            .done(function () {
+                jQuery(function () { // Wait for page load
+                    var pyminstances = window.pym.autoInit();
+                    jQuery.getScript('//apps.npr.org/carebot/carebot-tracker-v0.8.0.min.js')
+                      .done(function () {addCarebotTracking(pyminstances);});
                 });
             });
-        });
-    // Neither require.js nor jQuery are on the page
-    } else {
-        console.error('Could not load {{ slug }}! Neither require.js nor jQuery are on the page.');
-    }
+    })(window.jQuery);
 </script>
     </textarea>
 <!-- end textarea contents -->
@@ -289,7 +232,7 @@
 
 <!-- textarea contents -->
     <textarea readonly="readonly" rows="10" cols="50">
-<p data-pym-src="http://{{ PRODUCTION_S3_BUCKET['bucket_name'] }}/{{ PROJECT_SLUG }}/graphics/{{ slug }}/child.html">&amp;nbsp;</p><script src="http://{{ PRODUCTION_S3_BUCKET['bucket_name'] }}/{{ PROJECT_SLUG }}/graphics/{{ slug }}/js/lib/pym.js" type="text/javascript"></script>
+<p data-pym-src="http://{{ PRODUCTION_S3_BUCKET['bucket_name'] }}/{{ PROJECT_SLUG }}/graphics/{{ slug }}/child.html">_</p><script data-pym-url="//{{ PRODUCTION_S3_BUCKET['bucket_name'] }}/{{ PYM['pym_path'] }}/{{PYM['pym_file']}}" src="//{{ PRODUCTION_S3_BUCKET['bucket_name'] }}/{{ PYM['pym_loader_path'] }}/{{PYM['pym_loader_file']}}" type="text/javascript"></script>
     </textarea>
 <!-- end textarea contents -->
 
