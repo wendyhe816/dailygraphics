@@ -49,8 +49,8 @@ CAREBOT
 """
 
 CAREBOT = {
-    'carebot-path': 'carebot',
-    'carebot-file': 'carebot-tracker-v0.8.0.min.js',
+    'carebot_path': 'carebot',
+    'carebot_file': 'carebot-tracker-v0.8.0.min.js',
 }
 
 """

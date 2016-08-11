@@ -178,7 +178,7 @@
     <div class="content">
 
         <div id="preview-wrapper">
-            <div id='preview'>
+            <div id='preview' data-pym-src='child.html'>
             </div>
         </div>
 
@@ -215,11 +215,11 @@
             };
         };
 
-        jQuery.getScript("//apps.npr.org/pym/pym-v1.0.0.js")
+        jQuery.getScript("//{{ PRODUCTION_S3_BUCKET['bucket_name'] }}/{{ PYM['pym_path'] }}/{{PYM['pym_file']}}")
             .done(function () {
                 jQuery(function () { // Wait for page load
                     var pyminstances = window.pym.autoInit();
-                    jQuery.getScript('//apps.npr.org/carebot/carebot-tracker-v0.8.0.min.js')
+                    jQuery.getScript('//{{ PRODUCTION_S3_BUCKET['bucket_name'] }}/{{ CAREBOT['carebot_path'] }}/{{CAREBOT['carebot_file']}}')
                       .done(function () {addCarebotTracking(pyminstances);});
                 });
             });
@@ -238,8 +238,10 @@
 
     </div>
 
-    <script type="text/javascript" src="js/lib/pym.js"></script>
-    <script type="text/javascript" src="js/lib/carebot-tracker.js"></script>
+    <!-- <script type="text/javascript" src="js/lib/pym.js"></script>
+    <script type="text/javascript" src="js/lib/carebot-tracker.js"></script> -->
+    <script type="text/javascript" src="//{{ PRODUCTION_S3_BUCKET['bucket_name'] }}/{{ PYM['pym_path'] }}/{{PYM['pym_file']}}"></script>
+    <script type="text/javascript" src="//{{ PRODUCTION_S3_BUCKET['bucket_name'] }}/{{ CAREBOT['carebot_path'] }}/{{CAREBOT['carebot_file']}}"></script>
 
     <script type="text/javascript">
         var resizeSidebarEl = document.querySelector('#resize-sidebar');
@@ -294,9 +296,17 @@
             previewWrapperEl.style.width = '100%';
         }
 
-        var pymParent = new pym.Parent('preview', 'child.html', {});
+        // Use pym-v1.0.0 exposed autoInit to mimic production
+        // var pymParent = new pym.Parent('preview', 'child.html', {});
+        // var tracker = new CarebotTracker.VisibilityTracker('preview', function(result) {
+        //   pymParent.sendMessage('on-screen', result.bucket);
+        // });
+        var pyminstances = pym.autoInit();
+        var pymParent = null;
+        if (pyminstances.length) {pymParent = pyminstances[0];}
         var tracker = new CarebotTracker.VisibilityTracker('preview', function(result) {
-          pymParent.sendMessage('on-screen', result.bucket);
+            console.log("firing on screen")
+            pymParent.sendMessage('on-screen', result.bucket);
         });
 
     </script>
